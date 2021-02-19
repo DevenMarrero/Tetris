@@ -1,10 +1,11 @@
 // Tetris.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <iostream>
+#include "SDL.h"
 using namespace std;
 
-int main()
+int main(int argc, char *argv[])
 {
-    cout << "Hello World!\n";
+
+    return 0;
 }
