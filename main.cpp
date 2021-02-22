@@ -2,7 +2,6 @@
 //
 
 #include "Tetris.hpp"
-#include "Figure.hpp"
 #include "SDL.h"
 using namespace std;
 
