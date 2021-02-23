@@ -1,24 +1,28 @@
 // Tetris.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include "SDL.h" // Windows
-//#include <SDL2/SDL.h> // Mac
+//#include "SDL.h" // Windows
+#include <SDL2/SDL.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
 #include <vector>
 
 using namespace std;
+int gridSize = 30;
 
 class Figure {
 public:
     int x;
     int y;
 
-    // Constructor picks random shape and colour
-    Figure() {
+    // Constructor
+    // Figure() {}
+    
+    // Sets figure to random shap and colour
+    void reset(){
         // Set position
-        x = 0;
+        x = 4;
         y = 0;
         // Set random seed
         srand(time(NULL));
@@ -30,7 +34,7 @@ public:
         rotation = 0;
     }
 
-    // Show figure type and rotation
+    // Return figure type and rotation
     vector<int> state() {
         return figures[type][rotation];
     }
@@ -78,9 +82,10 @@ private:
 
 class Tetris {
 public:
+    int error = 1;
 
     // Constructor creates screen and sets up game
-    Tetris(const char* title, int xpos, int ypos, int width, int height) {
+    Tetris(const char* title, int xpos, int ypos, int width, int height) : shape(){
         // Setup SDL
         state = "quit";
         // Initialize SDL library
@@ -98,20 +103,21 @@ public:
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 }
                 else {
-                    cout << "Error Initializing Renderer\n";
+                    cout << "Error Initializing Renderer: " << SDL_GetError() << endl;
                     return;
                 }
             }
             else {
-                cout << "Error Initializing Window\n";
+                cout << "Error Initializing Window: " << SDL_GetError() << endl;
                 return;
             }
         }
         else {
-            cout << "Error Initializing SDL\n";
+            cout << "Error Initializing SDL: " << SDL_GetError() << endl;
             return;
         }
         // Setup Game
+        error = 0;
         reset();
     }
 
@@ -122,35 +128,38 @@ public:
         SDL_PollEvent(&event);
 
         switch (event.type) {
-        // Exit button pressed
-        case SDL_QUIT:
-            state = "quit";
-            break;
-        
-        // Key was pressed
-        case SDL_KEYDOWN:
-            //Start if in menu
-            if (state == "start") {
-                state = "play";
+            // Exit button pressed
+            case SDL_QUIT:
+                state = "quit";
                 break;
-            }
-            switch (event.key.keysym.sym){
-            case SDLK_LEFT:
-                break;
-            case SDLK_RIGHT:
-                break;
-            case SDLK_UP:
-                break;
-            case SDLK_DOWN:
-                break;
+            
+            // Key was pressed
+            case SDL_KEYDOWN:
+                //Start if in menu
+                if (state == "start") {
+                    state = "play";
+                    break;
+                }
+                switch (event.key.keysym.sym){
+                    case SDLK_LEFT:
+                        break;
+                    case SDLK_RIGHT:
+                        break;
+                    case SDLK_UP:
+                        break;
+                    case SDLK_DOWN:
+                        break;
+                    case SDLK_ESCAPE:
+                        state = "quit";
+                        break;
+
+                    default:
+                        break;
+                }
 
             default:
                 break;
             }
-
-        default:
-            break;
-        }
     }
 
     // Update all objects
@@ -162,7 +171,38 @@ public:
     void render() {
         SDL_RenderClear(renderer);
         // Render objects here
-
+        
+        // Menu
+        if (state == "start"){
+            
+        }
+        
+        // game
+        else if (state == "play"){
+            for (int row = 0; row < 20; row++) {
+                for (int column = 0; column < 10; column++) {
+                    SDL_Rect rect;
+                    rect.x = column * gridSize;
+                    rect.y = row * gridSize;
+                    rect.w = gridSize;
+                    rect.h = gridSize;
+                    
+                    // Colour of square
+                    SDL_SetRenderDrawColor(renderer, field[row][column][0], field[row][column][1], field[row][column][2], 255);
+                    SDL_RenderFillRect(renderer, &rect);
+                    // Border of square
+                    SDL_SetRenderDrawColor(renderer, 175, 175, 175, 255);
+                    SDL_RenderDrawRect(renderer, &rect);
+                }
+            }
+            
+        } // Game
+        
+        // Endscreen
+        else if (state == "finish"){
+            
+        }
+        
         // Set background to black and show new frame
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderPresent(renderer);
@@ -184,12 +224,11 @@ public:
 private:
     int score;
     int level;
-    string state;
+    string state; // start/play/finish/quit
+    // 10x20 playing grid that stores colours
     int field[20][10][3];
-
-
-    Figure figure;
-    Tetris() : figure() {}
+    
+    Figure shape;
 
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -199,6 +238,7 @@ private:
         int score = 0;
         int level = 0;
         state = "start";
+        new_figure();
         // clear grid
         for (int row = 0; row < 20; row++) {
             for (int column = 0; column < 10; column++) {
@@ -208,22 +248,32 @@ private:
             }
         }
     }
-
+    
+    void new_figure(){
+        shape.reset();
+    }
+    
 };
 
 
-
+// MAIN
 int main(int argc, char* argv[])
 {
 
     Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 300, 600);
-
+    // Catch problems setting up SLD2
+    if (tetris.error != 0){
+        return -1;
+    }
+    
+    // Gameloop
     while (tetris.getState() != "quit") {
         tetris.handleEvents();
         tetris.update();
         tetris.render();
     }
-
+    
+    // Clear memory used by SDL2
     tetris.clean();
 
     return 0;
