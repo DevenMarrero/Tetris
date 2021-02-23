@@ -15,10 +15,11 @@ public:
     int x;
     int y;
 
-    Figure(int xpos, int ypos) {
+    // Constructor picks random shape and colour
+    Figure() {
         // Set position
-        x = xpos;
-        y = ypos;
+        x = 0;
+        y = 0;
         // Set random seed
         srand(time(NULL));
         // Pick random shape
@@ -44,8 +45,8 @@ private:
     int colour;
     int rotation;
 
-    //Using vectors to easily return and get size of arrays
-    /* Vector of all shapes and their rotations in matrix
+    /*Using vectors to easily return and get size of arrays
+    Vector of all shapes and their rotations in matrix
     * 0  1  2  3
     * 4  5  6  7
     * 8  9  10 11
@@ -77,8 +78,11 @@ private:
 
 class Tetris {
 public:
+
+    // Constructor creates screen and sets up game
     Tetris(const char* title, int xpos, int ypos, int width, int height) {
-        isRunning = false;
+        // Setup SDL
+        state = "quit";
         // Initialize SDL library
         if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
             cout << "SDL Initialized\n";
@@ -92,7 +96,6 @@ public:
                 if (renderer) {
                     cout << "Renderer Created\n";
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                    isRunning = true;
                 }
                 else {
                     cout << "Error Initializing Renderer\n";
@@ -108,6 +111,8 @@ public:
             cout << "Error Initializing SDL\n";
             return;
         }
+        // Setup Game
+        reset();
     }
 
     // Check user input
@@ -117,10 +122,31 @@ public:
         SDL_PollEvent(&event);
 
         switch (event.type) {
-            // Exit button pressed
+        // Exit button pressed
         case SDL_QUIT:
-            isRunning = false;
+            state = "quit";
             break;
+        
+        // Key was pressed
+        case SDL_KEYDOWN:
+            //Start if in menu
+            if (state == "start") {
+                state = "play";
+                break;
+            }
+            switch (event.key.keysym.sym){
+            case SDLK_LEFT:
+                break;
+            case SDLK_RIGHT:
+                break;
+            case SDLK_UP:
+                break;
+            case SDLK_DOWN:
+                break;
+
+            default:
+                break;
+            }
 
         default:
             break;
@@ -131,7 +157,8 @@ public:
     void update() {
 
     }
-    // Update next frame
+
+    // Render next frame
     void render() {
         SDL_RenderClear(renderer);
         // Render objects here
@@ -140,6 +167,7 @@ public:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderPresent(renderer);
     }
+
     // Clear memory after program is complete
     void clean() {
         // Clear memory used by SDL
@@ -149,17 +177,38 @@ public:
         cout << "Game Cleaned\n";
     }
 
-    bool running() {
-        return isRunning;
+    string getState() {
+        return state;
     }
 
 private:
-    bool isRunning;
     int score;
     int level;
-    Figure figure();
+    string state;
+    int field[20][10][3];
+
+
+    Figure figure;
+    Tetris() : figure() {}
+
     SDL_Window* window;
     SDL_Renderer* renderer;
+
+    // reset game
+    void reset() {
+        int score = 0;
+        int level = 0;
+        state = "start";
+        // clear grid
+        for (int row = 0; row < 20; row++) {
+            for (int column = 0; column < 10; column++) {
+                field[row][column][0] = 0; //r
+                field[row][column][1] = 0; //g
+                field[row][column][2] = 0; //b
+            }
+        }
+    }
+
 };
 
 
@@ -169,7 +218,7 @@ int main(int argc, char* argv[])
 
     Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 300, 600);
 
-    while (tetris.running()) {
+    while (tetris.getState() != "quit") {
         tetris.handleEvents();
         tetris.update();
         tetris.render();
