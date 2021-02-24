@@ -394,6 +394,7 @@ int main(int argc, char* argv[])
     while (tetris.getState() != "quit") {
         Uint64 start = SDL_GetPerformanceCounter(); // Frame start time
         
+        // Frame
         tetris.handleEvents(); // Get input
         tetris.update(); // Calculate Physics
         tetris.render(); // Draw new frame
@@ -402,7 +403,7 @@ int main(int argc, char* argv[])
         // Time difference in ms
         float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
         // Wait the remaining time untill the frame is over
-       // SDL_Delay(floor(TICKS_PER_FRAME - elapsedMS));
+        SDL_Delay(floor(TICKS_PER_FRAME - elapsedMS));
     }
 
     // Clear memory used by SDL2
