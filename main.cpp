@@ -7,8 +7,8 @@
 //  Last Updated: Feb 24th, 2021
 //  Known Limitations:
 
-//#include "SDL.h" // Windows
-#include <SDL2/SDL.h> // Mac
+#include "SDL.h" // Windows
+//#include <SDL2/SDL.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -214,11 +214,9 @@ public:
                 delay = frameDiff;
             }
             
-            //Uint64 endMS = SDL_GetPerformanceCounter(); // Frame end time
             Uint32 endMS = SDL_GetTicks();
             float elapsedMS = endMS - startMS;
             // Time difference in ms
-            //float elapsedMS = (endMS - startMS) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
             
             if (elapsedMS >= delay){
                 // Move down
@@ -226,9 +224,8 @@ public:
                 // Hit something
                 if (intersects()){
                     shape.row++;
-                    breakLines();
                     freeze();
-                    //startMS = SDL_GetPerformanceCounter(); // Frame start time
+                    breakLines();
                 }
                 startMS = SDL_GetTicks();
             }
@@ -439,13 +436,25 @@ private:
     
     void breakLines(){
         for (int row = 0; row < 20; row++) {
+            bool full = true;
             for (int column = 0; column < 10; column++) {
                 // If empty square check next row
                 if (field[row][column][0] == 0 && field[row][column][1] == 0 && field[row][column][2] == 0){
+                    full = false;
                     break;
                 }
-                
             }
+            // If row is full move everything above down
+            if (full) {
+                for (int rRow = row + 1; rRow < 20; rRow++){
+                    for (int rColumn = 0; rColumn < 10; rColumn++) {
+                        field[rRow - 1][rColumn][0] = field[rRow][rColumn][0];
+                        field[rRow - 1][rColumn][1] = field[rRow][rColumn][1];
+                        field[rRow - 1][rColumn][2] = field[rRow][rColumn][2];
+                    }
+                }
+            }
+
         }
         
     }
