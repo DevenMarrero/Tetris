@@ -143,6 +143,10 @@ public:
 
         // Key was pressed
         case SDL_KEYDOWN:
+            if (state == "start") {
+                state = "play";
+                break;
+            }
             switch (event.key.keysym.sym) {
             case SDLK_LEFT:
                 moveLeft();
@@ -160,17 +164,13 @@ public:
                 break;
             case SDLK_SPACE:
                 hardDrop();
-                break;
+                break;   
+
             case SDLK_ESCAPE:
                 state = "quit";
                 break;
 
             default:
-                break;
-            }
-            //Start if in menu
-            if (state == "start") {
-                state = "play";
                 break;
             }
 
@@ -227,7 +227,9 @@ public:
             }
             // Remove piece from field
             for (auto coord : coords) {
-                field[coord[0]][coord[1]] == 0;
+                field[coord[0]][coord[1]][0] = 0;
+                field[coord[0]][coord[1]][1] = 0;
+                field[coord[0]][coord[1]][2] = 0;
             }
             coords.clear();
 
@@ -275,7 +277,7 @@ private:
         int score = 0;
         int level = 0;
         state = "start";
-        new_figure();
+        shape.reset();
         // clear grid
         for (int row = 0; row < 20; row++) {
             for (int column = 0; column < 10; column++) {
@@ -334,18 +336,23 @@ private:
         else if (shape.column > 9 || shape.column < 0) { // Touching Sides
             return true;
         }
-        //Touching another piece
+
         vector<int> proximity; // Vector of all nearby pieces
         proximity.clear();
         for (int row = shape.row; row > shape.row - 4; row--) { // Iterate through 4 rows
-            if (row < 0) { break; } // Below screen
 
             for (int column = shape.column; column < shape.column + 4; column++) { // Iterate through 4 columns in row
-                if (column > 9) { break; } // Right of screen
 
+                // Touching other piece
                 if (field[row][column][0] != 0 || field[row][column][1] != 0 || field[row][column][2] != 0) {
                     // Convert 2d grid to nums in range 0-15
-                    proximity.push_back(((shape.row - row) * 4) + (column - shape.column));
+                    int val = ((shape.row - row) * 4) + (column - shape.column);
+                    proximity.push_back(val);
+                }
+                // Touching edge of screen
+                else if (row < 0 || column > 9 || column < 0) {
+                    int val = ((shape.row - row) * 4) + (column - shape.column);
+                    proximity.push_back(val);
                 }
             }
         }
@@ -353,12 +360,12 @@ private:
         if (proximity.size() > 0) {
             for (auto num : shape.state()) {
                 // If position is also in proximity
-                if (find(proximity.begin(), proximity.end(), num) == proximity.end()) {
+                if (find(proximity.begin(), proximity.end(), num) != proximity.end()) {
+                    cout << "Collide\n";
                     return true;
                 }
             }
         }
-
         return false;
     }
 
@@ -402,7 +409,7 @@ int main(int argc, char* argv[])
         // Time difference in ms
         float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
         // Wait the remaining time untill the frame is over
-        SDL_Delay(floor(TICKS_PER_FRAME - elapsedMS));
+       // SDL_Delay(floor(TICKS_PER_FRAME - elapsedMS));
     }
 
     // Clear memory used by SDL2
