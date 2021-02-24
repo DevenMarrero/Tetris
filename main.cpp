@@ -44,14 +44,14 @@ public:
 
     // Rotate figure to next rotation in array
     void rotateRight() {
-        rotation = (rotation + 1) % figures[type].size();
-    }
-
-    void rotateLeft() {
         rotation--;
         if (rotation < 0) {
             rotation = figures[type].size() - 1;
         }
+    }
+
+    void rotateLeft() {
+        rotation = (rotation + 1) % figures[type].size();
     }
 
 private:
@@ -72,7 +72,7 @@ private:
         {{4, 5, 9, 10}, {2, 6, 5, 9}}, // Z
         {{6, 7, 9, 10}, {1, 5, 6, 10}}, // S
         {{1, 2, 5, 9}, {0, 4, 5, 6}, {1, 5, 9, 8}, {4, 5, 6, 10}}, // J
-        {{1, 2, 6, 10}, {5, 6, 7, 9}, {1, 6, 10, 11}, {3, 5, 6, 7}}, // L
+        {{1, 2, 6, 10}, {5, 6, 7, 9}, {1, 5, 9, 10}, {3, 5, 6, 7}}, // L
         {{1, 4, 5, 6}, {1, 4, 5, 9}, {4, 5, 6, 9}, {1, 5, 6, 9}}, // T
         {{1, 2, 5, 6}} // O
     };
@@ -329,13 +329,6 @@ private:
     }
 
     bool intersects() {
-
-        if (shape.row < 0) { // Touching bottom
-            return true;
-        }
-        else if (shape.column > 9 || shape.column < 0) { // Touching Sides
-            return true;
-        }
 
         vector<int> proximity; // Vector of all nearby pieces
         proximity.clear();
