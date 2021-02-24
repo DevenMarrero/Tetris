@@ -1,9 +1,14 @@
-
-// Tetris.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//  main.cpp
 //
+//  Title: Tetris
+//  Description: 2d Tetris clone made with SDL2
+//  Created by: Deven
+//  Created on: Feb 17th, 2021
+//  Last Updated: Feb 24th, 2021
+//  Known Limitations:
 
-#include "SDL.h" // Windows
-//#include <SDL2/SDL.h> // Mac
+//#include "SDL.h" // Windows
+#include <SDL2/SDL.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -27,8 +32,8 @@ public:
         // Pick random shape
         type = rand() % (figures.size() - 1);
         srand(time(NULL));
-        // Pick random colour
-        colour = rand() % (colours.size() - 1);
+        // Pick Colour
+        colour = type;
         rotation = 0;
     }
 
@@ -79,12 +84,13 @@ private:
 
     vector<vector<int>> colours =
     {
-        {120, 37, 179},
-        {100, 179, 179},
-        {80, 34, 22},
-        {80, 134, 22},
-        {180, 34, 22},
-        {180, 34, 122},
+        {33, 235, 225}, // Cyan
+        {235, 33, 33}, // Red
+        {27, 196, 47}, // Green
+        {30, 67, 214}, // blue
+        {224, 139, 34}, // Orange
+        {164, 34, 224}, //Purple
+        {242, 239, 24} //Yellow
     };
 
 };
@@ -122,7 +128,7 @@ public:
             return;
         }
         cout << "Renderer Created\n";
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); 
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
         error = 0; // No error
         // Setup Game
@@ -161,10 +167,11 @@ public:
                 rotateRight();
                 break;
             case SDLK_DOWN:
+                softDrop();
                 break;
             case SDLK_SPACE:
                 hardDrop();
-                break;   
+                break;
 
             case SDLK_ESCAPE:
                 state = "quit";
@@ -179,9 +186,54 @@ public:
         }
     }
 
-    // Update all objects
+    // Update figure object
     void update() {
-
+        if (state == "play"){
+            float frameDiff = 16.6666667; // Original NES time(MS) between frames
+            float delay; // MS between each drop (based on level)
+            
+            if (level >=0 && level <= 8){
+                delay = 800.0f - (5.f * level * frameDiff); // Ranged between 48-8 frames
+            }
+            else if (level == 9){
+                delay = frameDiff * 6;
+            }
+            else if (level >= 10 && level <= 12){
+                delay = frameDiff * 5;
+            }
+            else if (level >= 13 && level <= 15){
+                delay = frameDiff * 4;
+            }
+            else if (level >= 16 && level <= 18){
+                delay = frameDiff * 3;
+            }
+            else if (level >= 19 && level <= 28){
+                delay = frameDiff * 2;
+            }
+            else {
+                delay = frameDiff;
+            }
+            
+            //Uint64 endMS = SDL_GetPerformanceCounter(); // Frame end time
+            Uint32 endMS = SDL_GetTicks();
+            float elapsedMS = endMS - startMS;
+            // Time difference in ms
+            //float elapsedMS = (endMS - startMS) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
+            
+            if (elapsedMS >= delay){
+                // Move down
+                shape.row--;
+                // Hit something
+                if (intersects()){
+                    shape.row++;
+                    breakLines();
+                    freeze();
+                    //startMS = SDL_GetPerformanceCounter(); // Frame start time
+                }
+                startMS = SDL_GetTicks();
+            }
+        }
+        
     }
 
     // Render next frame
@@ -262,7 +314,10 @@ private:
     int SCREEN_WIDTH;
     int SCREEN_HEIGHT;
     int score;
-    int level;
+    float level; // Float so it can be used for arithmatic with other floats
+    int linesCleared;
+    Uint32 startMS;
+    
     string state; // start/play/finish/quit
     int field[20][10][3]; // 10x20 playing grid that stores colours
 
@@ -286,6 +341,8 @@ private:
                 field[row][column][2] = 0; //b
             }
         }
+        //startMS = SDL_GetPerformanceCounter(); // Frame start time
+        startMS = SDL_GetTicks();
     }
 
     // Get a new figure and start back at the top
@@ -311,6 +368,23 @@ private:
     }
 
     void hardDrop() {
+        int distance = 0;
+        while (!intersects()) {
+            shape.row--;
+            distance++;
+        }
+        shape.row++;
+        distance--;
+        score += distance * 2;
+    }
+    
+    void softDrop(){
+        shape.row--;
+        score++;
+        if (intersects()){
+            shape.row++;
+            score--;
+        }
 
     }
 
@@ -332,34 +406,48 @@ private:
 
         vector<int> proximity; // Vector of all nearby pieces
         proximity.clear();
-        for (int row = shape.row; row > shape.row - 4; row--) { // Iterate through 4 rows
+        // Iterate through 4 rows
+        for (int row = shape.row; row > shape.row - 4; row--) {
+            // Iterate through 4 columns in row
+            for (int column = shape.column; column < shape.column + 4; column++) {
 
-            for (int column = shape.column; column < shape.column + 4; column++) { // Iterate through 4 columns in row
-
-                // Touching other piece
+                // If touching other piece
                 if (field[row][column][0] != 0 || field[row][column][1] != 0 || field[row][column][2] != 0) {
                     // Convert 2d grid to nums in range 0-15
                     int val = ((shape.row - row) * 4) + (column - shape.column);
-                    proximity.push_back(val);
+                    proximity.push_back(val); // Add as possibility
                 }
                 // Touching edge of screen
                 else if (row < 0 || column > 9 || column < 0) {
                     int val = ((shape.row - row) * 4) + (column - shape.column);
-                    proximity.push_back(val);
+                    proximity.push_back(val); // Add as possibility
                 }
             }
         }
-
+        
+        // Check possible collisions for match
         if (proximity.size() > 0) {
             for (auto num : shape.state()) {
-                // If position is also in proximity
+                // If position is also in proximity they are colliding
                 if (find(proximity.begin(), proximity.end(), num) != proximity.end()) {
-                    cout << "Collide\n";
                     return true;
                 }
             }
         }
         return false;
+    }
+    
+    void breakLines(){
+        for (int row = 0; row < 20; row++) {
+            for (int column = 0; column < 10; column++) {
+                // If empty square check next row
+                if (field[row][column][0] == 0 && field[row][column][1] == 0 && field[row][column][2] == 0){
+                    break;
+                }
+                
+            }
+        }
+        
     }
 
     //Lock figure in place on grid
@@ -372,6 +460,8 @@ private:
             field[row][column][1] = colour[1];
             field[row][column][2] = colour[2];
         }
+        // Create a new figure
+        new_figure();
     }
 
 };
@@ -380,15 +470,14 @@ private:
 // MAIN - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 int main(int argc, char* argv[])
 {
-    const int FPS = 60; // How many times screen will refresh per seconds
-    const float TICKS_PER_FRAME = 1000 / FPS; // How many milliseconds each frame will take
+    const int FPS = 30; // How many times screen will refresh per seconds
+    const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
 
     Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 300, 600);
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
     }
-
 
     // Gameloop
     while (tetris.getState() != "quit") {
@@ -402,8 +491,11 @@ int main(int argc, char* argv[])
         Uint64 end = SDL_GetPerformanceCounter(); // Frame end time
         // Time difference in ms
         float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
-        // Wait the remaining time untill the frame is over
-        SDL_Delay(floor(TICKS_PER_FRAME - elapsedMS));
+        // Wait the remaining time untill the frame is over is there is time
+        float delay = floor(TICKS_PER_FRAME - elapsedMS);
+        if (delay > 0){
+            SDL_Delay(delay);
+        }
     }
 
     // Clear memory used by SDL2
