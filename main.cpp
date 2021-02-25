@@ -8,6 +8,7 @@
 //  Known Limitations:
 
 #include "SDL.h" // Windows
+#include "SDL_ttf.h"
 //#include <SDL2/SDL.h> // Mac
 
 #include <iostream>
@@ -104,16 +105,24 @@ public:
     // Constructor creates screen and sets up game
     Tetris(const char* title, int xpos, int ypos, int width, int height) : shape() {
         // Setup SDL
-        // Initialize SDL library
+        // Initialize SDL2 library
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
             cout << "Error Initializing SDL: " << SDL_GetError() << endl;
             return;
         }
         cout << "SDL Initialized\n";
+
+        // Initialize fonts library
+        if (TTF_Init() == -1) {
+            cout << "Error Initializing SDL_TTF\n";
+            return;
+        }
+        cout << "SDL_TTF Initialized\n";
         
         // Create the window to draw on
         SCREEN_WIDTH = width;
         SCREEN_HEIGHT = height;
+        OFFSET = (width / 2) - (GRIDSIZE * 5);
         window = SDL_CreateWindow(title, xpos, ypos, width, height, 0);
         if (!window) {
             cout << "Error Initializing Window: " << SDL_GetError() << endl;
@@ -239,7 +248,8 @@ public:
         // Render objects here
         // Menu
         if (state == "start") {
-
+            SDL_Color white = { 255, 255, 255, 255 };
+            renderText(100, 100, "Welcome", 20, white);
         }
 
         // game
@@ -260,7 +270,7 @@ public:
             for (int row = 0; row < 20; row++) {
                 for (int column = 0; column < 10; column++) {
                     SDL_Rect rect;
-                    rect.x = column * GRIDSIZE;
+                    rect.x = column * GRIDSIZE + OFFSET;
                     rect.y = SCREEN_HEIGHT - (row * GRIDSIZE) - GRIDSIZE;
                     rect.w = GRIDSIZE;
                     rect.h = GRIDSIZE;
@@ -310,8 +320,9 @@ public:
 private:
     int SCREEN_WIDTH;
     int SCREEN_HEIGHT;
+    int OFFSET;
     int score;
-    float level; // Float so it can be used for arithmatic with other floats
+    float level;
     int linesCleared;
     Uint32 startMS;
     
@@ -327,7 +338,7 @@ private:
     // reset game
     void reset() {
         int score = 0;
-        int level = 0;
+        int level = 1;
         state = "start";
         shape.reset();
         // clear grid
@@ -373,6 +384,8 @@ private:
         shape.row++;
         distance--;
         score += distance * 2;
+        freeze();
+        breakLines();
     }
     
     void softDrop(){
@@ -399,6 +412,7 @@ private:
         }
     }
 
+    // Check if piece is touching anything
     bool intersects() {
 
         vector<int> proximity; // Vector of all nearby pieces
@@ -434,19 +448,21 @@ private:
         return false;
     }
     
-    void breakLines(){
+    void breakLines() {
+        int linesBroken = 0;
         for (int row = 0; row < 20; row++) {
             bool full = true;
             for (int column = 0; column < 10; column++) {
                 // If empty square check next row
-                if (field[row][column][0] == 0 && field[row][column][1] == 0 && field[row][column][2] == 0){
+                if (field[row][column][0] == 0 && field[row][column][1] == 0 && field[row][column][2] == 0) {
                     full = false;
                     break;
                 }
             }
             // If row is full move everything above down
             if (full) {
-                for (int rRow = row + 1; rRow < 20; rRow++){
+                linesBroken++;
+                for (int rRow = row + 1; rRow < 20; rRow++) {
                     for (int rColumn = 0; rColumn < 10; rColumn++) {
                         field[rRow - 1][rColumn][0] = field[rRow][rColumn][0];
                         field[rRow - 1][rColumn][1] = field[rRow][rColumn][1];
@@ -456,7 +472,19 @@ private:
             }
 
         }
-        
+        // Add score
+        if (linesBroken == 1) {
+            score += 100 * level;
+        }
+        else if (linesBroken == 2) {
+            score += 300 * level;
+        }
+        else if (linesBroken == 3) {
+            score += 500 * level;
+        }
+        else if (linesBroken == 4) {
+            score += 800 * level;
+        }
     }
 
     //Lock figure in place on grid
@@ -473,6 +501,26 @@ private:
         new_figure();
     }
 
+    void renderText(int xpos, int ypos, string text, int fontSize, SDL_Color& colour) {
+        SDL_Rect position;
+        position.x = xpos;
+        position.y = ypos;
+        
+        // Get font
+        TTF_Font* font = TTF_OpenFont("arial.ttf", fontSize);
+
+        // Create texture
+        SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), colour);
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+
+        // Set width and height
+        SDL_QueryTexture(texture, nullptr, nullptr, &position.w, &position.h);
+
+        // Draw texture
+        SDL_RenderCopy(renderer, texture, nullptr, &position);
+    }
+
 };
 
 
@@ -482,7 +530,7 @@ int main(int argc, char* argv[])
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
 
-    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 300, 600);
+    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1200, 600); // 300 600
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
