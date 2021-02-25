@@ -7,16 +7,17 @@
 //  Last Updated: Feb 24th, 2021
 //  Known Limitations:
 
-#include "SDL.h" // Windows
-#include "SDL_ttf.h"
-//#include <SDL2/SDL.h> // Mac
+//#include "SDL.h" // Windows
+//#include "SDL_ttf.h" // Windows
+
+#include <SDL2/SDL.h> // Mac
+#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
 #include <vector>
 
 using namespace std;
-const int GRIDSIZE = 30; // size of each square on the grid
 
 class Figure {
 public:
@@ -103,7 +104,7 @@ public:
 
 
     // Constructor creates screen and sets up game
-    Tetris(const char* title, int xpos, int ypos, int width, int height) : shape() {
+    Tetris(const char* title, int xpos, int ypos, int width, int height, int gridSize) : shape() {
         // Setup SDL
         // Initialize SDL2 library
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -118,11 +119,15 @@ public:
             return;
         }
         cout << "SDL_TTF Initialized\n";
+        infoFont = TTF_OpenFont("/Library/Fonts/Arial.ttf", 30);
         
         // Create the window to draw on
+        GRIDSIZE = gridSize;
         SCREEN_WIDTH = width;
         SCREEN_HEIGHT = height;
-        OFFSET = (width / 2) - (GRIDSIZE * 5);
+        GRID_WIDTH = GRIDSIZE * 10;
+        GRID_HEIGHT = GRIDSIZE * 20;
+        OFFSET = (width / 2) - (GRIDSIZE * 5); // Xpos of grid start
         window = SDL_CreateWindow(title, xpos, ypos, width, height, 0);
         if (!window) {
             cout << "Error Initializing Window: " << SDL_GetError() << endl;
@@ -198,6 +203,7 @@ public:
     // Update figure object
     void update() {
         if (state == "play"){
+            level = (linesCleared / 10) + 1;
             float frameDiff = 16.6666667; // Original NES time(MS) between frames
             float delay; // MS between each drop (based on level)
             
@@ -245,11 +251,11 @@ public:
     // Render next frame
     void render() {
         SDL_RenderClear(renderer);
+        SDL_Color white = { 255, 255, 255, 255 };
         // Render objects here
         // Menu
         if (state == "start") {
-            SDL_Color white = { 255, 255, 255, 255 };
-            renderText(100, 100, "Welcome", 20, white);
+
         }
 
         // game
@@ -265,8 +271,8 @@ public:
                 field[row][column][2] = colour[2];
                 coords.push_back({ row, column });
             }
-
-
+            
+            // Draw grid
             for (int row = 0; row < 20; row++) {
                 for (int column = 0; column < 10; column++) {
                     SDL_Rect rect;
@@ -291,6 +297,31 @@ public:
                 field[coord[0]][coord[1]][2] = 0;
             }
             coords.clear();
+            
+            // Score/level/lines
+            // Large Border
+            SDL_Rect border;
+            border.x = OFFSET - 200;
+            border.y = SCREEN_HEIGHT - GRID_HEIGHT / 3  - GRID_HEIGHT / 7;
+            border.w = 175;
+            border.h = SCREEN_HEIGHT - border.y;
+            
+            int xCenter = border.x + border.w / 2;
+            int yTop = border.y + 25;
+            int yCenter = SCREEN_HEIGHT - border.h / 2 - 25;
+            int yBottom = SCREEN_HEIGHT - 75;
+            
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(renderer, &border);
+            
+            renderText(xCenter, yTop, "SCORE", infoFont, white);
+            renderText(xCenter, yTop + 35, to_string(score), infoFont, white);
+            
+            renderText(xCenter, yCenter, "LEVEL", infoFont, white);
+            renderText(xCenter, yCenter + 35, to_string((int)level), infoFont, white);
+            
+            renderText(xCenter, yBottom, "LINES", infoFont, white);
+            renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white);
 
         }
 
@@ -310,6 +341,7 @@ public:
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
         SDL_Quit();
+        TTF_Quit();
         cout << "Game Cleaned\n";
     }
 
@@ -320,25 +352,32 @@ public:
 private:
     int SCREEN_WIDTH;
     int SCREEN_HEIGHT;
+    int GRIDSIZE;
     int OFFSET;
+    int GRID_HEIGHT;
+    int GRID_WIDTH;
     int score;
     float level;
     int linesCleared;
+    
+    TTF_Font* infoFont;
+    
     Uint32 startMS;
+    
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    
+    Figure shape;
+    vector<Figure> figures;
     
     string state; // start/play/finish/quit
     int field[20][10][3]; // 10x20 playing grid that stores colours
 
-
-    Figure shape;
-
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-
     // reset game
     void reset() {
-        int score = 0;
-        int level = 1;
+        score = 0;
+        level = 1;
+        linesCleared = 0;
         state = "start";
         shape.reset();
         // clear grid
@@ -462,6 +501,7 @@ private:
             // If row is full move everything above down
             if (full) {
                 linesBroken++;
+                linesCleared++;
                 for (int rRow = row + 1; rRow < 20; rRow++) {
                     for (int rColumn = 0; rColumn < 10; rColumn++) {
                         field[rRow - 1][rColumn][0] = field[rRow][rColumn][0];
@@ -469,9 +509,11 @@ private:
                         field[rRow - 1][rColumn][2] = field[rRow][rColumn][2];
                     }
                 }
+                row--;
             }
 
         }
+        
         // Add score
         if (linesBroken == 1) {
             score += 100 * level;
@@ -501,13 +543,10 @@ private:
         new_figure();
     }
 
-    void renderText(int xpos, int ypos, string text, int fontSize, SDL_Color& colour) {
+    void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour) {
         SDL_Rect position;
         position.x = xpos;
         position.y = ypos;
-        
-        // Get font
-        TTF_Font* font = TTF_OpenFont("arial.ttf", fontSize);
 
         // Create texture
         SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), colour);
@@ -516,10 +555,14 @@ private:
 
         // Set width and height
         SDL_QueryTexture(texture, nullptr, nullptr, &position.w, &position.h);
+        
+        position.x -= position.w / 2;
+        position.y -= position.h /2;
 
         // Draw texture
         SDL_RenderCopy(renderer, texture, nullptr, &position);
     }
+
 
 };
 
@@ -530,7 +573,7 @@ int main(int argc, char* argv[])
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
 
-    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1200, 600); // 300 600
+    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // 300 600
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
