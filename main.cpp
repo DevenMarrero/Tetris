@@ -7,11 +7,11 @@
 //  Last Updated: Feb 24th, 2021
 //  Known Limitations:
 
-#include "SDL.h" // Windows
-#include "SDL_ttf.h" // Windows
+//#include "SDL.h" // Windows
+//#include "SDL_ttf.h" // Windows
 
-//#include <SDL2/SDL.h> // Mac
-//#include <SDL2_ttf/SDL_ttf.h> // Mac
+#include <SDL2/SDL.h> // Mac
+#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -42,12 +42,13 @@ public:
         return figures[type][rotation];
     }
 
+    // Return rgb values of figure
     vector<int>getColour() {
         return colours[colour];
     }
 
 
-    // Rotate figure to next rotation in array
+    // Rotate figure to previous rotation in array
     void rotateRight() {
         rotation--;
         if (rotation < 0) {
@@ -55,8 +56,13 @@ public:
         }
     }
 
+    // Rotate figure to next rotation in array
     void rotateLeft() {
         rotation = (rotation + 1) % figures[type].size();
+    }
+    
+    void resetRotation(){
+        rotation = 0;
     }
 
 private:
@@ -169,6 +175,9 @@ public:
         case SDL_KEYDOWN:
             if (state == "start") {
                 state = "play";
+                if (event.key.keysym.sym == SDLK_ESCAPE){
+                    state = "quit";
+                }
                 break;
             }
             switch (event.key.keysym.sym) {
@@ -257,8 +266,11 @@ public:
 
     // Render next frame
     void render() {
+        // Set background to black
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = { 255, 255, 255, 255 };
+        
         // Render objects here
         // Menu
         if (state == "start") {
@@ -269,6 +281,7 @@ public:
         else if (state == "play") {
             // Grid
             vector<vector<int>> coords;
+            
             // Temporarily add figure to grid for rendering
             vector<int> colour = shape.getColour();
             for (auto num : shape.state()) {
@@ -309,7 +322,8 @@ public:
             
 
             int gridTop = SCREEN_HEIGHT - GRID_HEIGHT;
-            // Score/level/lines - - - 
+            
+            // Score/level/lines - - -
             // Set dimensions of border
             SDL_Rect infoBorder;
             infoBorder.x = OFFSET - 200;
@@ -369,7 +383,50 @@ public:
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderDrawRect(renderer, &holdBorder);
+            
+            // Clear piece grid
+            int holdField[4][4][3];
+            for (int row = 0; row < 4; row++){
+                for (int column = 0; column < 4; column++){
+                    holdField[row][column][0] = 0;
+                    holdField[row][column][1] = 0;
+                    holdField[row][column][2] = 0;
+                }
+            }
+            
+            // Add piece to grid
+            if (holdShape.row != -1){
+                colour = holdShape.getColour();
+                for (auto num : holdShape.state()){
+                    int row = (num / 4);
+                    int column = num - (num / 4) * 4;
+                    holdField[row][column][0] = colour[0];
+                    holdField[row][column][1] = colour[1];
+                    holdField[row][column][2] = colour[2];
+                }
+            }
+            
+            // Draw grid
+            for (int row = 3; row > -1; row--){
+                for (int column = 0; column < 4; column++){
+                    SDL_Rect holdRect;
+                    holdRect.x = column * (GRIDSIZE + 5) + holdBorder.x + 15;
+                    holdRect.y = (holdBorder.y + holdBorder.h - 15) - (row * (GRIDSIZE + 5)) - (GRIDSIZE + 5);
+                    holdRect.w = (GRIDSIZE + 5);
+                    holdRect.h = (GRIDSIZE + 5);
 
+                    // Colour of square
+                    SDL_SetRenderDrawColor(renderer, holdField[row][column][0], holdField[row][column][1], holdField[row][column][2], 255);
+                    SDL_RenderFillRect(renderer, &holdRect);
+                    
+                    // Border of square of it has a piece
+                    if (holdField[row][column][0] != 0 || holdField[row][column][1] != 0 || holdField[row][column][2] != 0){
+                        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+                        SDL_RenderDrawRect(renderer, &holdRect);
+                    }
+                }
+            }
+            
         }
 
         // Endscreen
@@ -377,8 +434,7 @@ public:
 
         }
 
-        // Set background to black and show new frame
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        // Show new frame
         SDL_RenderPresent(renderer);
     }
 
@@ -407,6 +463,7 @@ private:
     float level;
     int linesCleared;
     int swapped;
+    bool held;
     
     TTF_Font* infoFont;
     
@@ -437,7 +494,7 @@ private:
         // Get next 3 shapes
         for (int i = 0; i < 3; i++) {
             Figure nextShape;
-           nextShape.reset();
+            nextShape.reset();
             nextShapes.push_back(nextShape);
         }
 
@@ -515,14 +572,18 @@ private:
     }
 
     void hold() {
-        if (holdShape.row != -1) {
-            holdShape.row = 19;
-            holdShape.column = 3;
-            swap(holdShape, shape);
-        }
-        else {
-            holdShape = shape;
-            new_figure();
+        if (!held){
+            if (holdShape.row != -1) {
+                holdShape.row = 19;
+                holdShape.column = 3;
+                shape.resetRotation();
+                swap(holdShape, shape);
+            }
+            else {
+                holdShape = shape;
+                new_figure();
+            }
+            held = true;
         }
     }
 
@@ -616,6 +677,8 @@ private:
         }
         // Create a new figure
         new_figure();
+        // Let user hold again
+        held = false;
     }
 
     // For displaying text on screen
