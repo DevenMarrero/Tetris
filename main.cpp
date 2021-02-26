@@ -7,15 +7,16 @@
 //  Last Updated: Feb 24th, 2021
 //  Known Limitations:
 
-//#include "SDL.h" // Windows
-//#include "SDL_ttf.h" // Windows
+#include "SDL.h" // Windows
+#include "SDL_ttf.h" // Windows
 
-#include <SDL2/SDL.h> // Mac
-#include <SDL2_ttf/SDL_ttf.h> // Mac
+//#include <SDL2/SDL.h> // Mac
+//#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -29,11 +30,8 @@ public:
         // Set position
         row = 19;
         column = 3;
-        // Set random seed
-        srand(time(NULL));
         // Pick random shape
         type = rand() % (figures.size() - 1);
-        srand(time(NULL));
         // Pick Colour
         colour = type;
         rotation = 0;
@@ -120,6 +118,12 @@ public:
         }
         cout << "SDL_TTF Initialized\n";
         infoFont = TTF_OpenFont("/Library/Fonts/Arial.ttf", 30);
+        if (!infoFont) {
+            infoFont = TTF_OpenFont("arial.ttf", 30);
+            if (!infoFont) {
+                cout << "Error opening font";
+            }
+        }
         
         // Create the window to draw on
         GRIDSIZE = gridSize;
@@ -185,6 +189,9 @@ public:
                 break;
             case SDLK_SPACE:
                 hardDrop();
+                break;
+            case SDLK_c:
+                hold();
                 break;
 
             case SDLK_ESCAPE:
@@ -260,6 +267,7 @@ public:
 
         // game
         else if (state == "play") {
+            // Grid
             vector<vector<int>> coords;
             // Temporarily add figure to grid for rendering
             vector<int> colour = shape.getColour();
@@ -290,6 +298,7 @@ public:
 
                 }
             }
+            
             // Remove piece from field
             for (auto coord : coords) {
                 field[coord[0]][coord[1]][0] = 0;
@@ -298,22 +307,27 @@ public:
             }
             coords.clear();
             
-            // Score/level/lines
-            // Large Border
-            SDL_Rect border;
-            border.x = OFFSET - 200;
-            border.y = SCREEN_HEIGHT - GRID_HEIGHT / 3  - GRID_HEIGHT / 7;
-            border.w = 175;
-            border.h = SCREEN_HEIGHT - border.y;
+
+            int gridTop = SCREEN_HEIGHT - GRID_HEIGHT;
+            // Score/level/lines - - - 
+            // Set dimensions of border
+            SDL_Rect infoBorder;
+            infoBorder.x = OFFSET - 200;
+            infoBorder.y = SCREEN_HEIGHT - GRID_HEIGHT / 3  - GRID_HEIGHT / 7;
+            infoBorder.w = 175;
+            infoBorder.h = SCREEN_HEIGHT - infoBorder.y;
             
-            int xCenter = border.x + border.w / 2;
-            int yTop = border.y + 25;
-            int yCenter = SCREEN_HEIGHT - border.h / 2 - 25;
+            // Positions inside Border
+            int xCenter = infoBorder.x + infoBorder.w / 2;
+            int yTop = infoBorder.y + 25;
+            int yCenter = SCREEN_HEIGHT - infoBorder.h / 2 - 25;
             int yBottom = SCREEN_HEIGHT - 75;
             
+            // Draw Border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_RenderDrawRect(renderer, &border);
+            SDL_RenderDrawRect(renderer, &infoBorder);
             
+            // Draw info
             renderText(xCenter, yTop, "SCORE", infoFont, white);
             renderText(xCenter, yTop + 35, to_string(score), infoFont, white);
             
@@ -322,6 +336,39 @@ public:
             
             renderText(xCenter, yBottom, "LINES", infoFont, white);
             renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white);
+
+
+            // Next pieces - - -
+            // Set dimensions of border
+            SDL_Rect nextBorder;
+            nextBorder.x = OFFSET + GRID_WIDTH + 25;
+            nextBorder.y = gridTop + 50;
+            nextBorder.w = 175;
+            nextBorder.h = GRID_HEIGHT / 2;
+
+            // Draw text
+            renderText(nextBorder.x + nextBorder.w /2, gridTop + 25, "NEXT", infoFont, white);
+
+            // Draw border
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(renderer, &nextBorder);
+
+            // Draw pieces
+
+
+            // Hold - - -
+            SDL_Rect holdBorder;
+            holdBorder.x = OFFSET - 200;
+            holdBorder.y = gridTop + 50;
+            holdBorder.w = 175;
+            holdBorder.h = 175;
+
+            // Draw text
+            renderText(holdBorder.x + holdBorder.w / 2, gridTop + 25, "HOLD", infoFont, white);
+
+            // Draw border
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(renderer, &holdBorder);
 
         }
 
@@ -359,6 +406,7 @@ private:
     int score;
     float level;
     int linesCleared;
+    int swapped;
     
     TTF_Font* infoFont;
     
@@ -368,7 +416,8 @@ private:
     SDL_Renderer* renderer;
     
     Figure shape;
-    vector<Figure> figures;
+    Figure holdShape;
+    vector<Figure> nextShapes;
     
     string state; // start/play/finish/quit
     int field[20][10][3]; // 10x20 playing grid that stores colours
@@ -379,7 +428,19 @@ private:
         level = 1;
         linesCleared = 0;
         state = "start";
+
+        // Reset current shape
         shape.reset();
+
+        // Used to mark empty holdshape
+        holdShape.row = -1;
+        // Get next 3 shapes
+        for (int i = 0; i < 3; i++) {
+            Figure nextShape;
+           nextShape.reset();
+            nextShapes.push_back(nextShape);
+        }
+
         // clear grid
         for (int row = 0; row < 20; row++) {
             for (int column = 0; column < 10; column++) {
@@ -388,13 +449,15 @@ private:
                 field[row][column][2] = 0; //b
             }
         }
-        //startMS = SDL_GetPerformanceCounter(); // Frame start time
-        startMS = SDL_GetTicks();
+        startMS = SDL_GetTicks(); // Frame start time
     }
 
     // Get a new figure and start back at the top
     void new_figure() {
-        shape.reset();
+        shape = nextShapes[0];
+        nextShapes[0] = nextShapes[1];
+        nextShapes[1] = nextShapes[2];
+        nextShapes[2].reset();
         if (intersects()) {
             state = "finish";
         }
@@ -448,6 +511,18 @@ private:
         shape.column--;
         if (intersects()) {
             shape.column++;
+        }
+    }
+
+    void hold() {
+        if (holdShape.row != -1) {
+            holdShape.row = 19;
+            holdShape.column = 3;
+            swap(holdShape, shape);
+        }
+        else {
+            holdShape = shape;
+            new_figure();
         }
     }
 
@@ -543,6 +618,7 @@ private:
         new_figure();
     }
 
+    // For displaying text on screen
     void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour) {
         SDL_Rect position;
         position.x = xpos;
@@ -572,6 +648,8 @@ int main(int argc, char* argv[])
 {
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
+    // Set random seed for pieces
+    srand(time(NULL));
 
     Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // 300 600
     // Catch problems setting up SLD2
