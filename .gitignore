@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 
+# Project
 *.sln
 *.vcxproj
 *.vcxproj.user
