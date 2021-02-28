@@ -7,11 +7,11 @@
 //  Last Updated: Feb 24th, 2021
 //  Known Limitations:
 
-//#include "SDL.h" // Windows
-//#include "SDL_ttf.h" // Windows
+#include "SDL.h" // Windows
+#include "SDL_ttf.h" // Windows
 
-#include <SDL2/SDL.h> // Mac
-#include <SDL2_ttf/SDL_ttf.h> // Mac
+//#include <SDL2/SDL.h> // Mac
+//#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -31,7 +31,7 @@ public:
         row = 19;
         column = 3;
         // Pick random shape
-        type = rand() % (figures.size() - 1);
+        type = rand() % figures.size();
         // Pick Colour
         colour = type;
         rotation = 0;
@@ -89,6 +89,8 @@ private:
     };
 
     vector<vector<int>> colours =
+
+
     {
         {33, 235, 225}, // Cyan
         {235, 33, 33}, // Red
