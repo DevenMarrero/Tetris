@@ -357,10 +357,10 @@ public:
             // Next pieces - - -
             // Set dimensions of border
             SDL_Rect nextBorder;
-            nextBorder.x = OFFSET + GRID_WIDTH + 25;
+            nextBorder.x = OFFSET + GRID_WIDTH + 25; // Right of grid
             nextBorder.y = gridTop + 50;
-            nextBorder.w = 175;
-            nextBorder.h = GRID_HEIGHT / 2;
+            nextBorder.w = 4 * (GRIDSIZE + 5) + 30; // Width of nextField grid
+            nextBorder.h = 14 * (GRIDSIZE + 5); // Height of nextField grid
 
             // Draw text
             renderText(nextBorder.x + nextBorder.w /2, gridTop + 25, "NEXT", infoFont, white);
@@ -369,7 +369,54 @@ public:
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderDrawRect(renderer, &nextBorder);
 
-            // Draw pieces
+
+            // Clear grid
+            int nextField[14][4][3];
+
+            for (int row = 0; row < 14; row++) {
+                for (int column = 0; column < 4; column++) {
+                    nextField[row][column][0] = 0;
+                    nextField[row][column][1] = 0;
+                    nextField[row][column][2] = 0;
+                }
+            }
+
+            // Add pieces to grid
+            int space = 0;
+            for (auto shape : nextShapes) {
+                colour = shape.getColour();
+                for (auto num : shape.state()) {
+
+                    int row = (num / 4) + space;
+                    int column = num - (num / 4) * 4;
+                    nextField[row][column][0] = colour[0];
+                    nextField[row][column][1] = colour[1];
+                    nextField[row][column][2] = colour[2];
+                }
+                space+= 5;
+            }
+
+            // Draw grid
+            for (int row = 0; row < 14; row++) {
+                for (int column = 0; column < 4; column++) {
+                    SDL_Rect nextRect;
+                    nextRect.x = column * (GRIDSIZE + 5) + nextBorder.x + 15;
+                    nextRect.y = nextBorder.y + (row * GRIDSIZE) + 15;
+                    nextRect.w = GRIDSIZE + 5; // Larger square
+                    nextRect.h = GRIDSIZE + 5;
+
+                    // Colour of square
+                    SDL_SetRenderDrawColor(renderer, nextField[row][column][0], nextField[row][column][1], nextField[row][column][2], 255);
+                    SDL_RenderFillRect(renderer, &nextRect);
+                    
+                    // Border of square of it has a piece
+                    if (nextField[row][column][0] != 0 || nextField[row][column][1] != 0 || nextField[row][column][2] != 0) {
+                        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+                        SDL_RenderDrawRect(renderer, &nextRect);
+                    }
+
+                }
+            }
 
 
             // Hold - - -
@@ -387,14 +434,13 @@ public:
             SDL_RenderDrawRect(renderer, &holdBorder);
             
             // Clear piece grid
-            int holdField[4][4][3];
-            for (int row = 0; row < 4; row++){
-                for (int column = 0; column < 4; column++){
-                    holdField[row][column][0] = 0;
-                    holdField[row][column][1] = 0;
-                    holdField[row][column][2] = 0;
-                }
-            }
+            int holdField[4][4][3] = 
+            {
+                {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+                {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+                {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+                {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+            };
             
             // Add piece to grid
             if (holdShape.row != -1){
@@ -414,8 +460,8 @@ public:
                     SDL_Rect holdRect;
                     holdRect.x = column * (GRIDSIZE + 5) + holdBorder.x + 15;
                     holdRect.y = (holdBorder.y + holdBorder.h - 15) - (row * (GRIDSIZE + 5)) - (GRIDSIZE + 5);
-                    holdRect.w = (GRIDSIZE + 5);
-                    holdRect.h = (GRIDSIZE + 5);
+                    holdRect.w = GRIDSIZE + 5;  // Larger square
+                    holdRect.h = GRIDSIZE + 5;
 
                     // Colour of square
                     SDL_SetRenderDrawColor(renderer, holdField[row][column][0], holdField[row][column][1], holdField[row][column][2], 255);
