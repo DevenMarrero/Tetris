@@ -4,14 +4,14 @@
 //  Description: 2d Tetris clone made with SDL2
 //  Created by: Deven
 //  Created on: Feb 17th, 2021
-//  Last Updated: Feb 24th, 2021
+//  Last Updated: March 1st, 2021
 //  Known Limitations:
 
-#include "SDL.h" // Windows
-#include "SDL_ttf.h" // Windows
+//#include "SDL.h" // Windows
+//#include "SDL_ttf.h" // Windows
 
-//#include <SDL2/SDL.h> // Mac
-//#include <SDL2_ttf/SDL_ttf.h> // Mac
+#include <SDL2/SDL.h> // Mac
+#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -125,13 +125,26 @@ public:
             return;
         }
         cout << "SDL_TTF Initialized\n";
-        infoFont = TTF_OpenFont("/Library/Fonts/Arial.ttf", 30);
+        
+        infoFont = getFont("Arial", 30);
         if (!infoFont) {
-            infoFont = TTF_OpenFont("arial.ttf", 30);
-            if (!infoFont) {
-                cout << "Error opening font";
-            }
+            cout << "Error opening font arial.ttf";
+            return;
         }
+        
+        titleFont = getFont("Arial", 100);
+        if (!titleFont) {
+            cout << "Error opening font arial.ttf";
+            return;
+        }
+        
+        startFont = getFont("Arial", 25);
+        if (!startFont){
+            cout << "Error opening font arial.ttf";
+            return;
+        }
+
+
         
         // Create the window to draw on
         GRIDSIZE = gridSize;
@@ -175,42 +188,86 @@ public:
 
         // Key was pressed
         case SDL_KEYDOWN:
-            if (state == "start") {
-                state = "play";
-                if (event.key.keysym.sym == SDLK_ESCAPE){
-                    state = "quit";
+            if (state == "start"){
+                switch (event.key.keysym.sym) {
+                    case SDLK_SPACE: // Start game
+                        state = "play";
+                        break;
+                        
+                    case SDLK_h: // Open help screen
+                        state = "help";
+                        break;
+                        
+                    case SDLK_ESCAPE: // Quit game
+                        state = "quit";
+                        break;
+                        
+                    default:
+                        break;
                 }
-                break;
             }
-            switch (event.key.keysym.sym) {
-            case SDLK_LEFT:
-                moveLeft();
-                break;
-            case SDLK_RIGHT:
-                moveRight();
-                break;
-            case SDLK_z:
-                rotateLeft();
-                break;
-            case SDLK_UP:
-                rotateRight();
-                break;
-            case SDLK_DOWN:
-                softDrop();
-                break;
-            case SDLK_SPACE:
-                hardDrop();
-                break;
-            case SDLK_c:
-                hold();
-                break;
+                
+            else if (state == "help"){
+                switch (event.key.keysym.sym) {
+                    case SDLK_SPACE: // Start game
+                        state = "play";
+                        break;
+                        
+                    case SDLK_h: // Go back to start
+                        state = "start";
+                        break;
+                        
+                    case SDLK_ESCAPE: // Quit game
+                        state = "quit";
+                        break;
+                        
+                    default:
+                        break;
+                }
+            }
+                
+            else if (state == "play"){
+                switch (event.key.keysym.sym) {
+                    case SDLK_LEFT: // Move left
+                        moveLeft();
+                        break;
+                    case SDLK_RIGHT: // Move right
+                        moveRight();
+                        break;
+                    case SDLK_z: // Rotate left
+                        rotateLeft();
+                        break;
+                    case SDLK_UP: // Rotate right
+                        rotateRight();
+                        break;
+                    case SDLK_DOWN: // Move down 1
+                        softDrop();
+                        break;
+                    case SDLK_SPACE: // Drop all the way down
+                        hardDrop();
+                        break;
+                    case SDLK_c: // Hold piece
+                        hold();
+                        break;
 
-            case SDLK_ESCAPE:
-                state = "quit";
-                break;
+                    case SDLK_ESCAPE: // Quit game
+                        state = "quit";
+                        break;
 
-            default:
-                break;
+                    default:
+                        break;
+                }
+            }
+                
+            else if (state == "finish"){
+                switch (event.key.keysym.sym){
+                    case SDLK_ESCAPE: // Quit game
+                        state = "quit";
+                        break;
+                        
+                    default:
+                        break;
+                }
             }
 
         default:
@@ -225,6 +282,7 @@ public:
             float frameDiff = 16.6666667; // Original NES time(MS) between frames
             float delay; // MS between each drop (based on level)
             
+            // Set game speed based on current level
             if (level >=0 && level <= 8){
                 delay = 800.0f - (5.f * level * frameDiff); // Ranged between 48-8 frames
             }
@@ -247,14 +305,14 @@ public:
                 delay = frameDiff;
             }
             
+            // Time difference in ms since last time the figure moved down
             Uint32 endMS = SDL_GetTicks();
             float elapsedMS = endMS - startMS;
-            // Time difference in ms
             
             if (elapsedMS >= delay){
                 // Move down
                 shape.row--;
-                // Hit something
+                // If figure hit something
                 if (intersects()){
                     shape.row++;
                     freeze();
@@ -278,9 +336,13 @@ public:
         if (state == "start") {
 
         }
+        
+        if (state == "help"){
+            
+        }
 
         // game
-        else if (state == "play") {
+        else if (state == "play" || state == "finish") {
             // Grid
             vector<vector<int>> coords;
             
@@ -434,7 +496,7 @@ public:
             SDL_RenderDrawRect(renderer, &holdBorder);
             
             // Clear piece grid
-            int holdField[4][4][3] = 
+            int holdField[4][4][3] =
             {
                 {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
                 {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
@@ -478,8 +540,9 @@ public:
         }
 
         // Endscreen
-        else if (state == "finish") {
-
+        if (state == "finish") {
+            SDL_Color red = { 235, 58, 14, 255 };
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100, "GAME OVER", titleFont, red);
         }
 
         // Show new frame
@@ -501,19 +564,20 @@ public:
     }
 
 private:
-    int SCREEN_WIDTH;
-    int SCREEN_HEIGHT;
-    int GRIDSIZE;
-    int OFFSET;
+    int SCREEN_WIDTH; // Window
+    int SCREEN_HEIGHT; // Window y
+    int GRIDSIZE; // Size of each grid square
+    int OFFSET; // X pos of left side of grid
     int GRID_HEIGHT;
     int GRID_WIDTH;
     int score;
     float level;
     int linesCleared;
-    int swapped;
-    bool held;
+    bool held; // If player has used hold already this turn
     
     TTF_Font* infoFont;
+    TTF_Font* titleFont;
+    TTF_Font* startFont;
     
     Uint32 startMS;
     
@@ -582,6 +646,7 @@ private:
         }
     }
 
+    // Move down untill figure hits
     void hardDrop() {
         int distance = 0;
         while (!intersects()) {
@@ -595,6 +660,7 @@ private:
         breakLines();
     }
     
+    // Move down one row
     void softDrop(){
         shape.row--;
         score++;
@@ -619,6 +685,7 @@ private:
         }
     }
 
+    // Switch piece to hold
     void hold() {
         if (!held){
             if (holdShape.row != -1) {
@@ -713,7 +780,7 @@ private:
         }
     }
 
-    //Lock figure in place on grid
+    // Lock figure in place on grid
     void freeze() {
         vector<int> colour = shape.getColour();
         for (auto num : shape.state()) {
@@ -750,6 +817,17 @@ private:
         SDL_RenderCopy(renderer, texture, nullptr, &position);
     }
 
+    // Loads a font in specified size
+    TTF_Font* getFont(string fontName, int size){
+        fontName += ".ttf";
+        string fontPath = "/Library/Fonts/" + fontName;
+        TTF_Font* userFont;
+        userFont = TTF_OpenFont(fontPath.c_str(), size);
+        if (!userFont) {
+            userFont = TTF_OpenFont(fontName.c_str(), size);
+        }
+        return userFont;
+    }
 
 };
 
@@ -762,7 +840,7 @@ int main(int argc, char* argv[])
     // Set random seed for pieces
     srand(time(NULL));
 
-    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // 300 600
+    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // Name, screenX, screenY, width, height, gridsize
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
@@ -778,9 +856,11 @@ int main(int argc, char* argv[])
         tetris.render(); // Draw new frame
 
         Uint64 end = SDL_GetPerformanceCounter(); // Frame end time
+        
         // Time difference in ms
         float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
-        // Wait the remaining time untill the frame is over is there is time
+        
+        // Wait the remaining time to keep frames at consistent speed.
         float delay = floor(TICKS_PER_FRAME - elapsedMS);
         if (delay > 0){
             SDL_Delay(delay);
