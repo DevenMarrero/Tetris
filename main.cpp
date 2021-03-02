@@ -1,6 +1,6 @@
 //  main.cpp
 //
-//  Title: Stacker 2D
+//  Title: Tetris
 //  Description: 2d Tetris clone made with SDL2
 //  Created by: Deven
 //  Created on: Feb 17th, 2021
@@ -52,7 +52,7 @@ public:
     void rotateRight() {
         rotation--;
         if (rotation < 0) {
-            rotation = (unsigned)figures[type].size() - 1;
+            rotation = figures[type].size() - 1;
         }
     }
 
@@ -256,19 +256,19 @@ public:
                     break;
                 }
             }
-                
-            else if (state == "finish"){
-                switch (event.key.keysym.sym){
-                    case SDLK_ESCAPE: // Quit game
-                        state = "quit";
-                        break;
-                        
-                    case SDLK_r: // Restart game
-                        reset();
-                        break;
-                        
-                    default:
-                        break;
+
+            else if (state == "finish") {
+                switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE: // Quit game
+                    state = "quit";
+                    break;
+
+                case SDLK_r: // Restart game
+                    reset();
+                    break;
+
+                default:
+                    break;
                 }
             }
 
@@ -332,19 +332,18 @@ public:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = { 255, 255, 255, 255 };
-        SDL_Color whiteFlash = {255, 255, 255, 255};
-        SDL_Color red = { 235, 58, 14, 255 };
+        SDL_Color whiteFlash = { 255, 255, 255, 255 };
+        SDL_Color red = { 255, 58, 14, 255 };
+
         // Render objects here
         // Menu
         if (state == "start") {
             // Title
-            renderText(SCREEN_WIDTH / 2, 100, "STACKER 2D", titleFont, white, true);
-            
-            
-            
+            renderText(SCREEN_WIDTH / 2, 100, "TETRIS", titleFont, white, true);
+
             // Press space to start
             bool down = true;
-            whiteFlash.a --;
+            whiteFlash.a--;
 
             renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, "PRESS SPACE TO START", startFont, whiteFlash, true);
         }
@@ -420,10 +419,10 @@ public:
             // Draw info
             renderText(xCenter, yTop, "SCORE", infoFont, white, true);
             renderText(xCenter, yTop + 35, to_string(score), infoFont, white, true);
-            
+
             renderText(xCenter, yCenter, "LEVEL", infoFont, white, true);
             renderText(xCenter, yCenter + 35, to_string((int)level), infoFont, white, true);
-            
+
             renderText(xCenter, yBottom, "LINES", infoFont, white, true);
             renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white, true);
 
@@ -437,7 +436,7 @@ public:
             nextBorder.h = 14 * (GRIDSIZE + 5); // Height of nextField grid
 
             // Draw text
-            renderText(nextBorder.x + nextBorder.w /2, gridTop + 25, "NEXT", infoFont, white, true);
+            renderText(nextBorder.x + nextBorder.w / 2, gridTop + 25, "NEXT", infoFont, white, true);
 
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -562,16 +561,11 @@ public:
 
     // Clear memory after program is complete
     void clean() {
-        nextShapes.clear();
-        TTF_CloseFont(infoFont);
-        TTF_CloseFont(startFont);
-        TTF_CloseFont(titleFont);
-        
         // Clear memory used by SDL
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
-        TTF_Quit();
         SDL_Quit();
+        TTF_Quit();
         cout << "Game Cleaned\n";
     }
 
@@ -596,16 +590,16 @@ private:
     TTF_Font* startFont;
 
     Uint32 startMS;
-    
-    SDL_Window* window = nullptr;
-    SDL_Renderer* renderer = nullptr;
-    
+
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+
     Figure shape;
     Figure holdShape;
     vector<Figure> nextShapes;
 
     string state; // start/play/finish/quit
-    int field[20][10][3]; // 10x20 playing grid that stores colours
+    int field[22][10][3]; // 10x20 playing grid that stores colours
 
     // reset game
     void reset() {
@@ -826,22 +820,21 @@ private:
 
         // Set width and height
         SDL_QueryTexture(texture, nullptr, nullptr, &position.w, &position.h);
-        
-        if (center){
+
+        if (center) {
             position.x -= position.w / 2;
-            position.y -= position.h /2;
+            position.y -= position.h / 2;
         }
-        
+
         // Draw texture
         SDL_RenderCopy(renderer, texture, nullptr, &position);
-        SDL_DestroyTexture(texture);
     }
 
     // Loads a font in specified size
     TTF_Font* getFont(string fontName, int size) {
         fontName += ".ttf";
         string fontPath = "/Library/Fonts/" + fontName;
-        TTF_Font *userFont;
+        TTF_Font* userFont;
         userFont = TTF_OpenFont(fontPath.c_str(), size);
         if (!userFont) {
             userFont = TTF_OpenFont(fontName.c_str(), size);
@@ -853,13 +846,14 @@ private:
 
 
 // MAIN - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
     // Set random seed for pieces
-    srand((unsigned)time(NULL));
+    srand(time(NULL));
 
-    Tetris tetris("Stacker 2D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // Name, screenX, screenY, width, height, gridsize
+    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // Name, screenX, screenY, width, height, gridsize
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
