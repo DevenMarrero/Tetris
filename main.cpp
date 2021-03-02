@@ -1,17 +1,17 @@
 //  main.cpp
 //
-//  Title: Tetris
+//  Title: Stacker 2D
 //  Description: 2d Tetris clone made with SDL2
 //  Created by: Deven
 //  Created on: Feb 17th, 2021
-//  Last Updated: March 1st, 2021
+//  Last Updated: March 2nd, 2021
 //  Known Limitations:
 
-//#include "SDL.h" // Windows
-//#include "SDL_ttf.h" // Windows
+#include "SDL.h" // Windows
+#include "SDL_ttf.h" // Windows
 
-#include <SDL2/SDL.h> // Mac
-#include <SDL2_ttf/SDL_ttf.h> // Mac
+//#include <SDL2/SDL.h> // Mac
+//#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -28,7 +28,7 @@ public:
     // Sets figure to random shap and colour
     void reset() {
         // Set position
-        row = 19;
+        row = 21;
         column = 3;
         // Pick random shape
         type = rand() % figures.size();
@@ -52,7 +52,7 @@ public:
     void rotateRight() {
         rotation--;
         if (rotation < 0) {
-            rotation = figures[type].size() - 1;
+            rotation = (unsigned)figures[type].size() - 1;
         }
     }
 
@@ -60,8 +60,8 @@ public:
     void rotateLeft() {
         rotation = (rotation + 1) % figures[type].size();
     }
-    
-    void resetRotation(){
+
+    void resetRotation() {
         rotation = 0;
     }
 
@@ -89,8 +89,6 @@ private:
     };
 
     vector<vector<int>> colours =
-
-
     {
         {33, 235, 225}, // Cyan
         {235, 33, 33}, // Red
@@ -125,27 +123,27 @@ public:
             return;
         }
         cout << "SDL_TTF Initialized\n";
-        
+
         infoFont = getFont("Arial", 30);
         if (!infoFont) {
             cout << "Error opening font arial.ttf";
             return;
         }
-        
+
         titleFont = getFont("Arial", 100);
         if (!titleFont) {
             cout << "Error opening font arial.ttf";
             return;
         }
-        
+
         startFont = getFont("Arial", 25);
-        if (!startFont){
+        if (!startFont) {
             cout << "Error opening font arial.ttf";
             return;
         }
 
 
-        
+
         // Create the window to draw on
         GRIDSIZE = gridSize;
         SCREEN_WIDTH = width;
@@ -181,92 +179,96 @@ public:
         SDL_PollEvent(&event);
 
         switch (event.type) {
-        // Exit button pressed
+            // Exit button pressed
         case SDL_QUIT:
             state = "quit";
             break;
 
-        // Key was pressed
+            // Key was pressed
         case SDL_KEYDOWN:
-            if (state == "start"){
+            if (state == "start") {
                 switch (event.key.keysym.sym) {
-                    case SDLK_SPACE: // Start game
-                        state = "play";
-                        break;
-                        
-                    case SDLK_h: // Open help screen
-                        state = "help";
-                        break;
-                        
-                    case SDLK_ESCAPE: // Quit game
-                        state = "quit";
-                        break;
-                        
-                    default:
-                        break;
-                }
-            }
-                
-            else if (state == "help"){
-                switch (event.key.keysym.sym) {
-                    case SDLK_SPACE: // Start game
-                        state = "play";
-                        break;
-                        
-                    case SDLK_h: // Go back to start
-                        state = "start";
-                        break;
-                        
-                    case SDLK_ESCAPE: // Quit game
-                        state = "quit";
-                        break;
-                        
-                    default:
-                        break;
-                }
-            }
-                
-            else if (state == "play"){
-                switch (event.key.keysym.sym) {
-                    case SDLK_LEFT: // Move left
-                        moveLeft();
-                        break;
-                    case SDLK_RIGHT: // Move right
-                        moveRight();
-                        break;
-                    case SDLK_z: // Rotate left
-                        rotateLeft();
-                        break;
-                    case SDLK_UP: // Rotate right
-                        rotateRight();
-                        break;
-                    case SDLK_DOWN: // Move down 1
-                        softDrop();
-                        break;
-                    case SDLK_SPACE: // Drop all the way down
-                        hardDrop();
-                        break;
-                    case SDLK_c: // Hold piece
-                        hold();
-                        break;
+                case SDLK_SPACE: // Start game
+                    state = "play";
+                    break;
 
-                    case SDLK_ESCAPE: // Quit game
-                        state = "quit";
-                        break;
+                case SDLK_h: // Open help screen
+                    state = "help";
+                    break;
 
-                    default:
-                        break;
+                case SDLK_ESCAPE: // Quit game
+                    state = "quit";
+                    break;
+
+                default:
+                    break;
                 }
             }
-                
-            else if (state == "finish"){
-                switch (event.key.keysym.sym){
-                    case SDLK_ESCAPE: // Quit game
-                        state = "quit";
-                        break;
-                        
-                    default:
-                        break;
+
+            else if (state == "help") {
+                switch (event.key.keysym.sym) {
+                case SDLK_SPACE: // Start game
+                    state = "play";
+                    break;
+
+                case SDLK_h: // Go back to start
+                    state = "start";
+                    break;
+
+                case SDLK_ESCAPE: // Quit game
+                    state = "quit";
+                    break;
+
+                default:
+                    break;
+                }
+            }
+
+            else if (state == "play") {
+                switch (event.key.keysym.sym) {
+                case SDLK_LEFT: // Move left
+                    moveLeft();
+                    break;
+                case SDLK_RIGHT: // Move right
+                    moveRight();
+                    break;
+                case SDLK_z: // Rotate left
+                    rotateLeft();
+                    break;
+                case SDLK_UP: // Rotate right
+                    rotateRight();
+                    break;
+                case SDLK_DOWN: // Move down 1
+                    softDrop();
+                    break;
+                case SDLK_SPACE: // Drop all the way down
+                    hardDrop();
+                    break;
+                case SDLK_c: // Hold piece
+                    hold();
+                    break;
+
+                case SDLK_ESCAPE: // Quit game
+                    state = "quit";
+                    break;
+
+                default:
+                    break;
+                }
+            }
+
+            else if (state == "finish") {
+                switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE: // Quit game
+                    state = "quit";
+                    break;
+
+                case SDLK_r: // Restart game
+                    reset();
+                    break;
+
+                default:
+                    break;
                 }
             }
 
@@ -277,43 +279,43 @@ public:
 
     // Update figure object
     void update() {
-        if (state == "play"){
+        if (state == "play") {
             level = (linesCleared / 10) + 1;
             float frameDiff = 16.6666667; // Original NES time(MS) between frames
             float delay; // MS between each drop (based on level)
-            
+
             // Set game speed based on current level
-            if (level >=0 && level <= 8){
+            if (level >= 0 && level <= 8) {
                 delay = 800.0f - (5.f * level * frameDiff); // Ranged between 48-8 frames
             }
-            else if (level == 9){
+            else if (level == 9) {
                 delay = frameDiff * 6;
             }
-            else if (level >= 10 && level <= 12){
+            else if (level >= 10 && level <= 12) {
                 delay = frameDiff * 5;
             }
-            else if (level >= 13 && level <= 15){
+            else if (level >= 13 && level <= 15) {
                 delay = frameDiff * 4;
             }
-            else if (level >= 16 && level <= 18){
+            else if (level >= 16 && level <= 18) {
                 delay = frameDiff * 3;
             }
-            else if (level >= 19 && level <= 28){
+            else if (level >= 19 && level <= 28) {
                 delay = frameDiff * 2;
             }
             else {
                 delay = frameDiff;
             }
-            
+
             // Time difference in ms since last time the figure moved down
             Uint32 endMS = SDL_GetTicks();
             float elapsedMS = endMS - startMS;
-            
-            if (elapsedMS >= delay){
+
+            if (elapsedMS >= delay) {
                 // Move down
                 shape.row--;
                 // If figure hit something
-                if (intersects()){
+                if (intersects()) {
                     shape.row++;
                     freeze();
                     breakLines();
@@ -321,7 +323,7 @@ public:
                 startMS = SDL_GetTicks();
             }
         }
-        
+
     }
 
     // Render next frame
@@ -330,22 +332,32 @@ public:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = { 255, 255, 255, 255 };
-        
+        SDL_Color whiteFlash = { 255, 255, 255, 255 };
+        SDL_Color red = { 235, 58, 14, 255 };
         // Render objects here
         // Menu
         if (state == "start") {
+            // Title
+            renderText(SCREEN_WIDTH / 2, 100, "STACKER 2D", titleFont, white, true);
 
+
+
+            // Press space to start
+            bool down = true;
+            whiteFlash.a--;
+
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, "PRESS SPACE TO START", startFont, whiteFlash, true);
         }
-        
-        if (state == "help"){
-            
+
+        if (state == "help") {
+
         }
 
         // game
         else if (state == "play" || state == "finish") {
             // Grid
             vector<vector<int>> coords;
-            
+
             // Temporarily add figure to grid for rendering
             vector<int> colour = shape.getColour();
             for (auto num : shape.state()) {
@@ -356,7 +368,7 @@ public:
                 field[row][column][2] = colour[2];
                 coords.push_back({ row, column });
             }
-            
+
             // Draw grid
             for (int row = 0; row < 20; row++) {
                 for (int column = 0; column < 10; column++) {
@@ -375,7 +387,7 @@ public:
 
                 }
             }
-            
+
             // Remove piece from field
             for (auto coord : coords) {
                 field[coord[0]][coord[1]][0] = 0;
@@ -383,37 +395,37 @@ public:
                 field[coord[0]][coord[1]][2] = 0;
             }
             coords.clear();
-            
+
 
             int gridTop = SCREEN_HEIGHT - GRID_HEIGHT;
-            
+
             // Score/level/lines - - -
             // Set dimensions of border
             SDL_Rect infoBorder;
             infoBorder.x = OFFSET - 200;
-            infoBorder.y = SCREEN_HEIGHT - GRID_HEIGHT / 3  - GRID_HEIGHT / 7;
+            infoBorder.y = SCREEN_HEIGHT - GRID_HEIGHT / 3 - GRID_HEIGHT / 7;
             infoBorder.w = 175;
             infoBorder.h = SCREEN_HEIGHT - infoBorder.y;
-            
+
             // Positions inside Border
             int xCenter = infoBorder.x + infoBorder.w / 2;
             int yTop = infoBorder.y + 25;
             int yCenter = SCREEN_HEIGHT - infoBorder.h / 2 - 25;
             int yBottom = SCREEN_HEIGHT - 75;
-            
+
             // Draw Border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderDrawRect(renderer, &infoBorder);
-            
+
             // Draw info
-            renderText(xCenter, yTop, "SCORE", infoFont, white);
-            renderText(xCenter, yTop + 35, to_string(score), infoFont, white);
-            
-            renderText(xCenter, yCenter, "LEVEL", infoFont, white);
-            renderText(xCenter, yCenter + 35, to_string((int)level), infoFont, white);
-            
-            renderText(xCenter, yBottom, "LINES", infoFont, white);
-            renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white);
+            renderText(xCenter, yTop, "SCORE", infoFont, white, true);
+            renderText(xCenter, yTop + 35, to_string(score), infoFont, white, true);
+
+            renderText(xCenter, yCenter, "LEVEL", infoFont, white, true);
+            renderText(xCenter, yCenter + 35, to_string((int)level), infoFont, white, true);
+
+            renderText(xCenter, yBottom, "LINES", infoFont, white, true);
+            renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white, true);
 
 
             // Next pieces - - -
@@ -425,7 +437,7 @@ public:
             nextBorder.h = 14 * (GRIDSIZE + 5); // Height of nextField grid
 
             // Draw text
-            renderText(nextBorder.x + nextBorder.w /2, gridTop + 25, "NEXT", infoFont, white);
+            renderText(nextBorder.x + nextBorder.w / 2, gridTop + 25, "NEXT", infoFont, white, true);
 
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -455,7 +467,7 @@ public:
                     nextField[row][column][1] = colour[1];
                     nextField[row][column][2] = colour[2];
                 }
-                space+= 5;
+                space += 5;
             }
 
             // Draw grid
@@ -470,7 +482,7 @@ public:
                     // Colour of square
                     SDL_SetRenderDrawColor(renderer, nextField[row][column][0], nextField[row][column][1], nextField[row][column][2], 255);
                     SDL_RenderFillRect(renderer, &nextRect);
-                    
+
                     // Border of square of it has a piece
                     if (nextField[row][column][0] != 0 || nextField[row][column][1] != 0 || nextField[row][column][2] != 0) {
                         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
@@ -489,12 +501,12 @@ public:
             holdBorder.h = 175;
 
             // Draw text
-            renderText(holdBorder.x + holdBorder.w / 2, gridTop + 25, "HOLD", infoFont, white);
+            renderText(holdBorder.x + holdBorder.w / 2, gridTop + 25, "HOLD", infoFont, white, true);
 
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderDrawRect(renderer, &holdBorder);
-            
+
             // Clear piece grid
             int holdField[4][4][3] =
             {
@@ -503,11 +515,11 @@ public:
                 {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
                 {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
             };
-            
+
             // Add piece to grid
-            if (holdShape.row != -1){
+            if (holdShape.row != -1) {
                 colour = holdShape.getColour();
-                for (auto num : holdShape.state()){
+                for (auto num : holdShape.state()) {
                     int row = (num / 4);
                     int column = num - (num / 4) * 4;
                     holdField[row][column][0] = colour[0];
@@ -515,10 +527,10 @@ public:
                     holdField[row][column][2] = colour[2];
                 }
             }
-            
+
             // Draw grid
-            for (int row = 3; row > -1; row--){
-                for (int column = 0; column < 4; column++){
+            for (int row = 3; row > -1; row--) {
+                for (int column = 0; column < 4; column++) {
                     SDL_Rect holdRect;
                     holdRect.x = column * (GRIDSIZE + 5) + holdBorder.x + 15;
                     holdRect.y = (holdBorder.y + holdBorder.h - 15) - (row * (GRIDSIZE + 5)) - (GRIDSIZE + 5);
@@ -528,21 +540,20 @@ public:
                     // Colour of square
                     SDL_SetRenderDrawColor(renderer, holdField[row][column][0], holdField[row][column][1], holdField[row][column][2], 255);
                     SDL_RenderFillRect(renderer, &holdRect);
-                    
+
                     // Border of square of it has a piece
-                    if (holdField[row][column][0] != 0 || holdField[row][column][1] != 0 || holdField[row][column][2] != 0){
+                    if (holdField[row][column][0] != 0 || holdField[row][column][1] != 0 || holdField[row][column][2] != 0) {
                         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
                         SDL_RenderDrawRect(renderer, &holdRect);
                     }
                 }
             }
-            
+
         }
 
         // Endscreen
         if (state == "finish") {
-            SDL_Color red = { 235, 58, 14, 255 };
-            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100, "GAME OVER", titleFont, red);
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100, "GAME OVER", titleFont, red, true);
         }
 
         // Show new frame
@@ -551,11 +562,16 @@ public:
 
     // Clear memory after program is complete
     void clean() {
+        nextShapes.clear();
+        TTF_CloseFont(infoFont);
+        TTF_CloseFont(startFont);
+        TTF_CloseFont(titleFont);
+
         // Clear memory used by SDL
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
-        SDL_Quit();
         TTF_Quit();
+        SDL_Quit();
         cout << "Game Cleaned\n";
     }
 
@@ -574,20 +590,20 @@ private:
     float level;
     int linesCleared;
     bool held; // If player has used hold already this turn
-    
+
     TTF_Font* infoFont;
     TTF_Font* titleFont;
     TTF_Font* startFont;
-    
+
     Uint32 startMS;
-    
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    
+
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
     Figure shape;
     Figure holdShape;
     vector<Figure> nextShapes;
-    
+
     string state; // start/play/finish/quit
     int field[20][10][3]; // 10x20 playing grid that stores colours
 
@@ -604,6 +620,7 @@ private:
         // Used to mark empty holdshape
         holdShape.row = -1;
         // Get next 3 shapes
+        nextShapes.clear();
         for (int i = 0; i < 3; i++) {
             Figure nextShape;
             nextShape.reset();
@@ -611,7 +628,7 @@ private:
         }
 
         // clear grid
-        for (int row = 0; row < 20; row++) {
+        for (int row = 0; row < 22; row++) {
             for (int column = 0; column < 10; column++) {
                 field[row][column][0] = 0; //r
                 field[row][column][1] = 0; //g
@@ -659,12 +676,12 @@ private:
         freeze();
         breakLines();
     }
-    
+
     // Move down one row
-    void softDrop(){
+    void softDrop() {
         shape.row--;
         score++;
-        if (intersects()){
+        if (intersects()) {
             shape.row++;
             score--;
         }
@@ -687,7 +704,7 @@ private:
 
     // Switch piece to hold
     void hold() {
-        if (!held){
+        if (!held) {
             if (holdShape.row != -1) {
                 holdShape.row = 19;
                 holdShape.column = 3;
@@ -725,7 +742,7 @@ private:
                 }
             }
         }
-        
+
         // Check possible collisions for match
         if (proximity.size() > 0) {
             for (auto num : shape.state()) {
@@ -737,7 +754,7 @@ private:
         }
         return false;
     }
-    
+
     void breakLines() {
         int linesBroken = 0;
         for (int row = 0; row < 20; row++) {
@@ -764,7 +781,7 @@ private:
             }
 
         }
-        
+
         // Add score
         if (linesBroken == 1) {
             score += 100 * level;
@@ -797,7 +814,7 @@ private:
     }
 
     // For displaying text on screen
-    void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour) {
+    void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour, bool center) {
         SDL_Rect position;
         position.x = xpos;
         position.y = ypos;
@@ -809,16 +826,19 @@ private:
 
         // Set width and height
         SDL_QueryTexture(texture, nullptr, nullptr, &position.w, &position.h);
-        
-        position.x -= position.w / 2;
-        position.y -= position.h /2;
+
+        if (center) {
+            position.x -= position.w / 2;
+            position.y -= position.h / 2;
+        }
 
         // Draw texture
         SDL_RenderCopy(renderer, texture, nullptr, &position);
+        SDL_DestroyTexture(texture);
     }
 
     // Loads a font in specified size
-    TTF_Font* getFont(string fontName, int size){
+    TTF_Font* getFont(string fontName, int size) {
         fontName += ".ttf";
         string fontPath = "/Library/Fonts/" + fontName;
         TTF_Font* userFont;
@@ -833,14 +853,13 @@ private:
 
 
 // MAIN - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
     // Set random seed for pieces
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
 
-    Tetris tetris("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // Name, screenX, screenY, width, height, gridsize
+    Tetris tetris("Stacker 2D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 30); // Name, screenX, screenY, width, height, gridsize
     // Catch problems setting up SLD2
     if (tetris.error != 0) {
         return -1;
@@ -849,20 +868,20 @@ int main(int argc, char* argv[])
     // Gameloop
     while (tetris.getState() != "quit") {
         Uint64 start = SDL_GetPerformanceCounter(); // Frame start time
-        
+
         // Frame
         tetris.handleEvents(); // Get input
         tetris.update(); // Calculate Physics
         tetris.render(); // Draw new frame
 
         Uint64 end = SDL_GetPerformanceCounter(); // Frame end time
-        
+
         // Time difference in ms
         float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
-        
+
         // Wait the remaining time to keep frames at consistent speed.
         float delay = floor(TICKS_PER_FRAME - elapsedMS);
-        if (delay > 0){
+        if (delay > 0) {
             SDL_Delay(delay);
         }
     }
