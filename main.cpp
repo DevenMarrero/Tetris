@@ -4,14 +4,14 @@
 //  Description: 2d Tetris clone made with SDL2
 //  Created by: Deven
 //  Created on: Feb 17th, 2021
-//  Last Updated: March 2nd, 2021
+//  Last Updated: March 3rd, 2021
 //  Known Limitations:
 
-#include "SDL.h" // Windows
-#include "SDL_ttf.h" // Windows
+//#include "SDL.h" // Windows
+//#include "SDL_ttf.h" // Windows
 
-//#include <SDL2/SDL.h> // Mac
-//#include <SDL2_ttf/SDL_ttf.h> // Mac
+#include <SDL2/SDL.h> // Mac
+#include <SDL2_ttf/SDL_ttf.h> // Mac
 
 #include <iostream>
 #include <time.h> // Random seed
@@ -136,8 +136,8 @@ public:
             return;
         }
 
-        startFont = getFont("Arial", 25);
-        if (!startFont) {
+        textFont = getFont("Arial", 25);
+        if (!textFont) {
             cout << "Error opening font arial.ttf";
             return;
         }
@@ -207,20 +207,16 @@ public:
 
             else if (state == "help") {
                 switch (event.key.keysym.sym) {
-                case SDLK_SPACE: // Start game
-                    state = "play";
-                    break;
+                    case SDLK_h: // Go back to start
+                        state = "start";
+                        break;
 
-                case SDLK_h: // Go back to start
-                    state = "start";
-                    break;
+                    case SDLK_ESCAPE: // Quit game
+                        state = "quit";
+                        break;
 
-                case SDLK_ESCAPE: // Quit game
-                    state = "quit";
-                    break;
-
-                default:
-                    break;
+                    default:
+                        break;
                 }
             }
 
@@ -332,36 +328,124 @@ public:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = { 255, 255, 255, 255 };
+        SDL_Color grey = { 255, 255, 255, 100};
+        SDL_Color whiteFlash = { 255, 255, 255, light };
 
+        
+        // Flashing text animation
+        if (down) {
+            light-= 7;
+            if (light < 20) {
+                down = false;
+            }
+        }
+        else {
+            light+= 6;
+            if (light > 248) {
+                light = 255;
+                down = true;
+            }
+        }
+        
         // Render objects here
+
         // Menu
         if (state == "start") {
+            
+            // Background
+            vector<vector<vector<int>>> figures =
+            {
+                {{1, 5, 9, 13}, {33, 235, 225}},// I
+                {{4, 5, 9, 10}, {235, 33, 33}}, // Z
+                {{6, 7, 9, 10}, {27, 196, 47}}, // S
+                {{1, 2, 5, 9}, {30, 67, 214}}, // J
+                {{1, 2, 6, 10}, {224, 139, 34}},// L
+                {{1, 4, 5, 6}, {164, 34, 224}},// T
+                {{0, 1, 4, 5}, {242, 239, 24}}// O
+            };
+    
+            // Clear grid
+            int backField[4][31][3];
+            for (int row = 0; row < 4; row++) {
+                for (int column = 0; column < 31; column++) {
+                    backField[row][column][0] = 0;
+                    backField[row][column][1] = 0;
+                    backField[row][column][2] = 0;
+                }
+            }
+
+            // Add pieces to grid
+            int space = 0;
+            for (auto figure : figures) {
+                vector<int> colour = figure[1];
+                for (auto num : figure[0]) {
+
+                    int row = (num / 4);
+                    int column = num - (num / 4) * 4 + space;
+                    backField[row][column][0] = colour[0];
+                    backField[row][column][1] = colour[1];
+                    backField[row][column][2] = colour[2];
+                }
+                space += 4;
+            }
+
+            // Draw grid
+            for (int row = 0; row < 4; row++) {
+                for (int column = 0; column < 31; column++) {
+                    SDL_Rect nextRect;
+                    nextRect.x = column * (GRIDSIZE);
+                    nextRect.y = SCREEN_HEIGHT / 2 - 75 + (row * GRIDSIZE);
+                    nextRect.w = GRIDSIZE;
+                    nextRect.h = GRIDSIZE;
+
+                    // Colour of square
+                    SDL_SetRenderDrawColor(renderer, backField[row][column][0], backField[row][column][1], backField[row][column][2], 255);
+                    SDL_RenderFillRect(renderer, &nextRect);
+
+                    // Border of square of it has a piece
+                    if (backField[row][column][0] != 0 || backField[row][column][1] != 0 || backField[row][column][2] != 0) {
+                        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+                        SDL_RenderDrawRect(renderer, &nextRect);
+                    }
+
+                }
+            }
+            
             // Title
-            renderText(SCREEN_WIDTH / 2, 100, "TETRIS", titleFont, white, true);
-
-            // Press space to start animation
-            if (down) {
-                light-= 7;
-                if (light < 20) {
-                    down = false;
-                }
-            }
-            else {
-                light+= 7;
-                if (light > 255) {
-                    light = 255;
-                    down = true;
-                }
-            }
-
-            SDL_Color whiteFlash = { 255, 255, 255, light };
-            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, "PRESS SPACE TO START", startFont, whiteFlash, true);
+            renderText(SCREEN_WIDTH / 2, 50, "TETRIS", titleFont, white, true);
+            
+            // Keys
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, "PRESS SPACE TO START", infoFont, whiteFlash, true);
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 50, "PRESS H TO VIEW CONTROLS", textFont, grey , true);
         }
-
+        
+        // Controls/help
         if (state == "help") {
-
+            // Title
+            renderText(SCREEN_WIDTH / 2, 25, "CONTROLS", infoFont, white, true);
+            
+            // Controls
+            renderText(50, 100, "ESC - Close", textFont, white, false);
+            renderText(50, 150, "C - Hold", textFont, white, false);
+            renderText(50, 200, "SPACE - Hard Drop", textFont, white, false);
+            renderText(50, 250, "Z - Rotate Left", textFont, white, false);
+            renderText(50, 300, "UP - Rotate Right", textFont, white, false);
+            renderText(50, 350, "LEFT - Move Left", textFont, white, false);
+            renderText(50, 400, "RIGHT - Move Right", textFont, white, false);
+            renderText(50, 450, "DOWN - Soft Drop", textFont, white, false);
+            
+            // How to play
+            string HowToPlay = "The goal of Tetris is to try and score as many points as possible by stacking figures in horizontal rows.\nThe game will gradually speed up with the more lines you clear.";
+            renderText(SCREEN_WIDTH / 2 - 50, 100, HowToPlay, textFont, white, false, 400);
+            
+            // Score Values
+            string ScoreValues = "SCORE VALUES\n\nSoft Drop     - 1 X Distance \nHard Drop    - 2 X Distance \nSingle Line  - 100 \nDouble Line - 300 \nTriple Line   - 500 \nTetris (4)      - 800";
+            renderText(SCREEN_WIDTH / 2 - 50, 275, ScoreValues, textFont, white, false);
+            
+            // Return to menu
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 50, "Press H to return to the menu", textFont, whiteFlash, true);
         }
-
+        
         // game
         else if (state == "play" || state == "finish") {
             // Grid
@@ -437,7 +521,7 @@ public:
             renderText(xCenter, yBottom + 35, to_string(linesCleared), infoFont, white, true);
 
 
-            // Next pieces - - -
+            // Next pieces - - - - - - - - - - - - -
             // Set dimensions of border
             SDL_Rect nextBorder;
             nextBorder.x = OFFSET + GRID_WIDTH + 25; // Right of grid
@@ -446,7 +530,7 @@ public:
             nextBorder.h = 14 * (GRIDSIZE + 5); // Height of nextField grid
 
             // Draw text
-            renderText(nextBorder.x + nextBorder.w / 2, gridTop + 25, "NEXT", infoFont, white, true);
+            renderText(nextBorder.x + nextBorder.w / 2, gridTop + 10, "NEXT", infoFont, white, true);
 
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -502,7 +586,7 @@ public:
             }
 
 
-            // Hold - - -
+            // Hold - - - - - - - - - - - - -
             SDL_Rect holdBorder;
             holdBorder.x = OFFSET - 200;
             holdBorder.y = gridTop + 50;
@@ -510,7 +594,7 @@ public:
             holdBorder.h = 175;
 
             // Draw text
-            renderText(holdBorder.x + holdBorder.w / 2, gridTop + 25, "HOLD", infoFont, white, true);
+            renderText(holdBorder.x + holdBorder.w / 2, gridTop + 10, "HOLD", infoFont, white, true);
 
             // Draw border
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -563,7 +647,7 @@ public:
         // Endscreen
         if (state == "finish") {
             renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 125, "GAME OVER", titleFont, white, true);
-            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 25, "Press R to play again or ESC to close", startFont, white, true);
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 25, "Press R to play again or ESC to close", textFont, white, true);
         }
 
         // Show new frame
@@ -579,7 +663,8 @@ public:
         TTF_Quit();
         cout << "Game Cleaned\n";
     }
-
+    
+    // Return currect game state
     string getState() {
         return state;
     }
@@ -601,21 +686,25 @@ private:
 
     // Start animation
     bool down;
-    int light;
+    Uint8 light;
 
+    // Fonts
     TTF_Font* infoFont;
     TTF_Font* titleFont;
-    TTF_Font* startFont;
-
+    TTF_Font* textFont;
+    
+    // Figure drop timer
     Uint32 startMS;
-
+    
+    // SDL2
     SDL_Window* window;
     SDL_Renderer* renderer;
 
+    // Figures
     Figure shape;
     Figure holdShape;
     vector<Figure> nextShapes;
-
+    
     string state; // start/play/finish/quit
     int field[22][10][3]; // 10x20 playing grid that stores colours
 
@@ -830,13 +919,13 @@ private:
     }
 
     // For displaying text on screen
-    void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour, bool center) {
+    void renderText(int xpos, int ypos, string text, TTF_Font* font, SDL_Color& colour, bool center, int wrap = 1000) {
         SDL_Rect position;
         position.x = xpos;
         position.y = ypos;
 
         // Create texture
-        SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), colour);
+        SDL_Surface* surface = TTF_RenderText_Blended_Wrapped(font, text.c_str(), colour, wrap);
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
 
@@ -845,11 +934,13 @@ private:
 
         if (center) {
             position.x -= position.w / 2;
-            position.y -= position.h / 2;
+            //position.y -= position.h / 2;
         }
 
         // Draw texture
         SDL_RenderCopy(renderer, texture, nullptr, &position);
+        
+        SDL_DestroyTexture(texture);
     }
 
     // Loads a font in specified size
