@@ -332,8 +332,6 @@ public:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = { 255, 255, 255, 255 };
-        SDL_Color whiteFlash = { 255, 255, 255, 255 };
-        SDL_Color red = { 255, 58, 14, 255 };
 
         // Render objects here
         // Menu
@@ -341,10 +339,22 @@ public:
             // Title
             renderText(SCREEN_WIDTH / 2, 100, "TETRIS", titleFont, white, true);
 
-            // Press space to start
-            bool down = true;
-            whiteFlash.a--;
+            // Press space to start animation
+            if (down) {
+                light-= 7;
+                if (light < 20) {
+                    down = false;
+                }
+            }
+            else {
+                light+= 7;
+                if (light > 255) {
+                    light = 255;
+                    down = true;
+                }
+            }
 
+            SDL_Color whiteFlash = { 255, 255, 255, light };
             renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, "PRESS SPACE TO START", startFont, whiteFlash, true);
         }
 
@@ -552,7 +562,8 @@ public:
 
         // Endscreen
         if (state == "finish") {
-            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100, "GAME OVER", titleFont, red, true);
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 125, "GAME OVER", titleFont, white, true);
+            renderText(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 25, "Press R to play again or ESC to close", startFont, white, true);
         }
 
         // Show new frame
@@ -574,16 +585,23 @@ public:
     }
 
 private:
+    // Screen
     int SCREEN_WIDTH; // Window
     int SCREEN_HEIGHT; // Window y
     int GRIDSIZE; // Size of each grid square
     int OFFSET; // X pos of left side of grid
     int GRID_HEIGHT;
     int GRID_WIDTH;
+
+    // Game
     int score;
     float level;
     int linesCleared;
     bool held; // If player has used hold already this turn
+
+    // Start animation
+    bool down;
+    int light;
 
     TTF_Font* infoFont;
     TTF_Font* titleFont;
@@ -607,6 +625,9 @@ private:
         level = 1;
         linesCleared = 0;
         state = "start";
+
+        down = true;
+        light = 255;
 
         // Reset current shape
         shape.reset();
@@ -749,6 +770,7 @@ private:
         return false;
     }
 
+    // Clear full rows and move evything above down
     void breakLines() {
         int linesBroken = 0;
         for (int row = 0; row < 20; row++) {
@@ -776,7 +798,7 @@ private:
 
         }
 
-        // Add score
+        // Calculate score
         if (linesBroken == 1) {
             score += 100 * level;
         }
@@ -850,6 +872,7 @@ int main(int argc, char* argv[])
 {
     const int FPS = 30; // How many times screen will refresh per seconds
     const float TICKS_PER_FRAME = 1000 / FPS; // Calculate how many milliseconds each frame will take
+   
     // Set random seed for pieces
     srand(time(NULL));
 
