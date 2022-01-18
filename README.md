@@ -1,6 +1,6 @@
 # Tetris
 
-Design Process: Major C++ Project
+Major C++ Project. The following is a write-up handed in with the assignment.
 
 # Understanding context
 
